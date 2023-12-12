@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:photo_view/photo_view.dart'
     show
@@ -153,8 +156,9 @@ class PhotoViewCoreState extends State<PhotoViewCore>
     final double newScale = _scaleBefore! * details.scale;
     final Offset delta = details.focalPoint - _normalizedPosition!;
 
-    if (widget.strictScale && (newScale > widget.scaleBoundaries.maxScale ||
-        newScale < widget.scaleBoundaries.minScale)) {
+    if (widget.strictScale &&
+        (newScale > widget.scaleBoundaries.maxScale ||
+            newScale < widget.scaleBoundaries.minScale)) {
       return;
     }
 
@@ -334,7 +338,7 @@ class PhotoViewCoreState extends State<PhotoViewCore>
               child: _buildHero(),
             );
 
-            final child = Container(
+            Widget child = Container(
               constraints: widget.tightMode
                   ? BoxConstraints.tight(scaleBoundaries.childSize * scale)
                   : null,
@@ -350,6 +354,20 @@ class PhotoViewCoreState extends State<PhotoViewCore>
 
             if (widget.disableGestures) {
               return child;
+            }
+
+            if (Platform.isWindows) {
+              child = Listener(
+                onPointerSignal: (pointerSignal) {
+                  if (pointerSignal is PointerScrollEvent) {
+                    final delta = pointerSignal.scrollDelta.dy;
+                    controller.updateMultiple(
+                        scale:
+                            (controller.scale ?? 1) * (delta < 0 ? 1.2 : 0.8));
+                  }
+                },
+                child: child,
+              );
             }
 
             return PhotoViewGestureDetector(
